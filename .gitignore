@@ -2,4 +2,12 @@
 __pycache__/
 *.pyc
 
-data/output/
+
+data/input/jpg/raw/*
+data/input/tif/*
+data/input/dsm/*
+data/input/dtm/*
+data/input/pointcloud/*
+
+data/intermediate/*
+data/output/*
