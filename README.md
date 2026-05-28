@@ -16,9 +16,9 @@ The project is designed as a modular microservice-oriented architecture and is i
 
 ---
 
-# Goals
+## Goals
 
-## Short Term (MVP)
+### Short Term (MVP)
 
 - Forest mask generation
 - GeoTIFF analysis
@@ -26,7 +26,7 @@ The project is designed as a modular microservice-oriented architecture and is i
 - GeoJSON export
 - Web GIS visualization
 
-## Mid Term
+### Mid Term
 
 - CHM (Canopy Height Model) support
 - DSM / DTM analysis
@@ -34,7 +34,7 @@ The project is designed as a modular microservice-oriented architecture and is i
 - Annotation tools
 - Semi-automatic training data generation
 
-## Long Term
+### Long Term
 
 - AI-based pine wilt detection
 - Continuous monitoring
@@ -45,7 +45,7 @@ The project is designed as a modular microservice-oriented architecture and is i
 
 ---
 
-# Architecture
+## Architecture
 
 ```text
 Drone Images
@@ -65,7 +65,7 @@ Web GIS
 
 ---
 
-# Project Structure
+## Project Structure
 
 ```text
 forest-analyzer/
@@ -81,22 +81,22 @@ forest-analyzer/
 
 ---
 
-# Development Environment
+## Development Environment
 
-## OS
+### OS
 
 - WSL2
 - Ubuntu 24.x
 
-## Editor
+### Editor
 
 - VSCode
 
-## Language
+### Language
 
 - Python 3.12
 
-## Main Libraries
+### Main Libraries
 
 - OpenCV
 - rasterio
@@ -108,9 +108,9 @@ forest-analyzer/
 
 ---
 
-# Current Status
+## Current Status
 
-## Implemented
+### Implemented
 
 - [ ] Project structure
 - [ ] Forest mask CLI
@@ -118,7 +118,7 @@ forest-analyzer/
 - [ ] Texture analysis
 - [ ] GeoJSON export
 
-## Planned
+### Planned
 
 - [ ] CHM processing
 - [ ] Pine wilt detection
@@ -129,16 +129,16 @@ forest-analyzer/
 
 ---
 
-# Data Sources
+## Data Sources
 
-## Input
+### Input
 
 - Drone JPG images
 - Orthophoto GeoTIFF
 - DSM / DTM
 - OpenAerialMap datasets
 
-## Output
+### Output
 
 - Forest masks
 - Pine candidate polygons
@@ -148,9 +148,9 @@ forest-analyzer/
 
 ---
 
-# Core Concepts
+## Core Concepts
 
-## Forest Mask
+### Forest Mask
 
 Extract forest areas from orthophotos using:
 
@@ -159,7 +159,7 @@ Extract forest areas from orthophotos using:
 - Morphology filtering
 - Height filtering (future)
 
-## Pine Wilt Detection
+### Pine Wilt Detection
 
 Detect abnormal pine trees using:
 
@@ -170,27 +170,27 @@ Detect abnormal pine trees using:
 
 ---
 
-# Roadmap
+## Roadmap
 
-## Phase 1
+### Phase 1
 
 - Forest mask generation
 - CLI-based processing
 - GeoJSON export
 
-## Phase 2
+### Phase 2
 
 - Web API
 - Web GIS viewer
 - Tile generation
 
-## Phase 3
+### Phase 3
 
 - CHM support
 - Time series comparison
 - Annotation support
 
-## Phase 4
+### Phase 4
 
 - AI segmentation
 - SaaS architecture
@@ -198,12 +198,12 @@ Detect abnormal pine trees using:
 
 ---
 
-# License
+## License
 
 TBD
 
 ---
 
-# Author
+## Author
 
 Personal R&D project.
