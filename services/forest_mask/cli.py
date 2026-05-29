@@ -15,7 +15,7 @@ from services.forest_mask.overlay import create_mask_overlay
 from services.forest_mask.context import filter_components_by_surrounding_healthy
 from services.forest_mask.contour import draw_mask_contours
 from services.forest_mask.bbox import draw_mask_bboxes
-from services.forest_mask.candidate import extract_candidates
+from services.forest_mask.candidate import extract_candidates, save_candidates_csv
 from services.forest_mask.preset import PRESETS, get_preset
 
 @click.command()
@@ -41,12 +41,14 @@ def main(
     feature_dir = Path("data/intermediate/features")
     mask_dir = Path("data/intermediate/forest_mask")
     class_dir = Path("data/intermediate/classifier")
-    overlay_dir = Path("data/intermediate/overlay")
+    output_dir = Path("data/output/overlay")
+    candidate_dir = Path("data/intermediate/candidates")
 
     feature_dir.mkdir(parents=True, exist_ok=True)
     mask_dir.mkdir(parents=True, exist_ok=True)
     class_dir.mkdir(parents=True, exist_ok=True)
-    overlay_dir.mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    candidate_dir.mkdir(parents=True, exist_ok=True)
 
     # 特徴量生成
     exg = calc_exg(rgb)
@@ -141,9 +143,11 @@ def main(
     save_mask(anomaly_context, anomaly_context_path)
 
     candidates = extract_candidates(anomaly_context)
-    click.echo(f"Candidates: {len(candidates)}")
+    candidate_csv_path = candidate_dir / f"candidates_{formatted_time}.csv"
+    save_candidates_csv(candidates, candidate_csv_path)
+    click.echo(f"Candidates: {len(candidates)} -> {candidate_csv_path}")
 
-    anomaly_overlay_path = overlay_dir / f"an_overlay_{formatted_time}.jpg"
+    anomaly_overlay_path = output_dir / f"an_overlay_{formatted_time}.jpg"
     anomaly_overlay = create_mask_overlay(
         rgb,
         anomaly_context,
@@ -152,14 +156,14 @@ def main(
     )
     save_rgb(anomaly_overlay, anomaly_overlay_path)
 
-    contour_rgb_path = overlay_dir / f"contour_{formatted_time}.jpg"
+    contour_rgb_path = output_dir / f"contour_{formatted_time}.jpg"
     contour_rgb = draw_mask_contours(
         rgb,
         anomaly_context,
     )
     save_rgb(contour_rgb, contour_rgb_path)
 
-    bbox_rgb_path = overlay_dir / f"bbox_{formatted_time}.jpg"
+    bbox_rgb_path = output_dir / f"bbox_{formatted_time}.jpg"
     bbox_rgb = draw_mask_bboxes(
         rgb,
         anomaly_context,

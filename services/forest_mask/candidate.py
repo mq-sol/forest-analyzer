@@ -1,7 +1,23 @@
+import csv
+from pathlib import Path
+
 import cv2
 import numpy as np
 
 from services.forest_mask.bbox import calc_bbox_shape_score
+
+
+CANDIDATE_CSV_FIELDS: tuple[str, ...] = (
+    "id",
+    "x",
+    "y",
+    "width",
+    "height",
+    "area_px",
+    "center_x",
+    "center_y",
+    "shape_score",
+)
 
 
 def extract_candidates(
@@ -102,3 +118,41 @@ def extract_candidates(
         )
 
     return candidates
+
+
+def save_candidates_csv(
+    candidates: list[dict[str, int | float]],
+    path: Path,
+) -> None:
+    """
+    Save extracted candidates to a CSV file.
+
+    The CSV uses the field order defined by
+    :data:`CANDIDATE_CSV_FIELDS` so the column layout is stable across
+    runs and downstream consumers (e.g. pandas, QGIS) can rely on it.
+
+    Parameters
+    ----------
+    candidates : list[dict[str, int | float]]
+        Candidate records as returned by :func:`extract_candidates`.
+        An empty list is allowed; in that case only the header row
+        is written.
+
+    path : Path
+        Output CSV path.
+        The parent directory must already exist.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    Coordinates are written verbatim in image pixel space.
+    No geographic coordinate transformation is applied.
+    """
+
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=list(CANDIDATE_CSV_FIELDS))
+        writer.writeheader()
+        writer.writerows(candidates)
