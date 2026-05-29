@@ -15,33 +15,25 @@ from services.forest_mask.overlay import create_mask_overlay
 from services.forest_mask.context import filter_components_by_surrounding_healthy
 from services.forest_mask.contour import draw_mask_contours
 from services.forest_mask.bbox import draw_mask_bboxes
+from services.forest_mask.preset import PRESETS, get_preset
 
 @click.command()
 @click.argument(
     "input_file",
     type=click.Path(exists=True, path_type=Path),
 )
-@click.option("--threshold", type=float, default=10.0, show_default=True)
-@click.option("--texture-kernel", type=int, default=5, show_default=True)
-@click.option("--closing", type=int, default=5, show_default=True)
-@click.option("--opening", type=int, default=3, show_default=True)
-@click.option("--min-size", type=int, default=100, show_default=True)
-@click.option("--sat-th", type=float, default=80.0, show_default=True)
-@click.option("--lab-a-th", type=float, default=125.0, show_default=True)
-@click.option("--anomaly-sat-th", type=float, default=60.0, show_default=True)
-@click.option("--anomaly-val-th", type=float, default=170.0, show_default=True)
+@click.option(
+    "--preset",
+    type=click.Choice(list(PRESETS.keys())),
+    default="default",
+    show_default=True,
+)
 def main(
     input_file: Path,
-    threshold: float,
-    texture_kernel: int,
-    closing: int,
-    opening: int,
-    min_size: int,
-    sat_th: float,
-    lab_a_th: float,
-    anomaly_sat_th: float,
-    anomaly_val_th: float,
+    preset: str,
 ) -> None:
+    params = get_preset(preset)
+
     rgb = load_rgb(input_file)
     formatted_time = datetime.now().strftime("%Y%m%d%H%M%S")
 
@@ -69,22 +61,22 @@ def main(
     save_gray(lab_a, feature_dir / f"lab_a_{formatted_time}.jpg")
     save_gray(lab_b, feature_dir / f"lab_b_{formatted_time}.jpg")
 
-    texture = calc_texture(exg, texture_kernel)
+    texture = calc_texture(exg, params.texture_kernel)
     save_gray(texture, feature_dir / f"texture_{formatted_time}.jpg")
 
     click.echo(f"Saved features: {feature_dir}")
 
     # 基本森林マスク
-    forest_mask = calc_forest_mask(exg, threshold)
+    forest_mask = calc_forest_mask(exg, params.threshold)
 
     raw_mask_path = mask_dir / f"fmask_raw_{formatted_time}.jpg"
     save_mask(forest_mask, raw_mask_path)
 
-    morph_mask = apply_morphology(forest_mask, closing, opening)
+    morph_mask = apply_morphology(forest_mask, params.closing, params.opening)
     morph_mask_path = mask_dir / f"fmask_morph_{formatted_time}.jpg"
     save_mask(morph_mask, morph_mask_path)
 
-    compo_mask = remove_small_components(morph_mask, min_size)
+    compo_mask = remove_small_components(morph_mask, params.min_size)
     compo_mask_path = mask_dir / f"fmask_compo_{formatted_time}.jpg"
     save_mask(compo_mask, compo_mask_path)
 
@@ -97,32 +89,30 @@ def main(
         v=hsv_v,
         lab_a=lab_a,
         texture=texture,
-        exg_threshold=threshold,
-        saturation_threshold=sat_th,
-        lab_a_threshold=lab_a_th,
-        anomaly_saturation_threshold=anomaly_sat_th,
-        anomaly_value_threshold=anomaly_val_th,
-        texture_threshold=texture_kernel,
+        exg_threshold=params.threshold,
+        saturation_threshold=params.sat_th,
+        lab_a_threshold=params.lab_a_th,
+        anomaly_saturation_threshold=params.anomaly_sat_th,
+        anomaly_value_threshold=params.anomaly_val_th,
+        texture_threshold=params.texture_th,
     )
 
     save_mask(healthy_mask, class_dir / f"healthy_{formatted_time}.jpg")
     save_mask(anomaly_mask, class_dir / f"anomaly_{formatted_time}.jpg")
     save_mask(unknown_mask, class_dir / f"unknown_{formatted_time}.jpg")
 
-    closing = 5
-    opening = 3
-
-    anomaly_morph = apply_morphology(anomaly_mask, closing, opening)
+    anomaly_morph = apply_morphology(
+        anomaly_mask,
+        params.anomaly_closing,
+        params.anomaly_opening,
+    )
     anomaly_morph_path = mask_dir / f"amask_morph_{formatted_time}.jpg"
     save_mask(anomaly_morph, anomaly_morph_path)
 
-    closing = 7
-    opening = 3
-
     healthy_morph = apply_morphology(
         healthy_mask,
-        closing,
-        opening,
+        params.healthy_closing,
+        params.healthy_opening,
     )
     healthy_morph_path = mask_dir / f"hmask_morph_{formatted_time}.jpg"
     save_mask(healthy_morph, healthy_morph_path)
@@ -131,7 +121,7 @@ def main(
 
     anomaly_compo = remove_small_components(
         anomaly_morph,
-        min_size=300,
+        min_size=params.anomaly_min_size,
     )
 
     anomaly_compo_path = mask_dir / f"amask_compo_{formatted_time}.jpg"
@@ -141,10 +131,10 @@ def main(
     anomaly_context = filter_components_by_surrounding_healthy(
         anomaly_mask=anomaly_compo,
         healthy_mask=healthy_morph,
-        min_size=30,
-        max_size=2000,
-        buffer_size=15,
-        min_healthy_ratio=0.4,
+        min_size=params.context_min_size,
+        max_size=params.context_max_size,
+        buffer_size=params.context_buffer_size,
+        min_healthy_ratio=params.context_healthy_ratio,
     )
 
     save_mask(anomaly_context, anomaly_context_path)
@@ -158,7 +148,7 @@ def main(
     )
     save_rgb(anomaly_overlay, anomaly_overlay_path)
 
-    contour_rgb_path = overlay_dir / f"conter_{formatted_time}.jpg"
+    contour_rgb_path = overlay_dir / f"contour_{formatted_time}.jpg"
     contour_rgb = draw_mask_contours(
         rgb,
         anomaly_context,
@@ -169,6 +159,8 @@ def main(
     bbox_rgb = draw_mask_bboxes(
         rgb,
         anomaly_context,
+        min_bbox_area=params.min_bbox_area,
+        max_shape_score=params.max_shape_score,
     )
     save_rgb(bbox_rgb, bbox_rgb_path)
 

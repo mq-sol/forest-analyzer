@@ -7,6 +7,8 @@ def draw_mask_bboxes(
     mask: np.ndarray,
     color: tuple[int, int, int] = (255, 0, 0),
     thickness: int = 2,
+    min_bbox_area: int = 100,
+    max_shape_score: float | None = None,
 ) -> np.ndarray:
     """
     Draw bounding boxes for connected components in a binary mask.
@@ -31,6 +33,17 @@ def draw_mask_bboxes(
     thickness : int, optional
         Bounding box line thickness.
         Default is 2.
+
+    min_bbox_area : int, optional
+        Minimum bounding box area in pixels.
+        Forwarded to :func:`extract_bboxes`.
+        Default is 100.
+
+    max_shape_score : float or None, optional
+        Maximum allowed bbox shape score.
+        Forwarded to :func:`extract_bboxes`.
+        If None, no shape score filtering is applied.
+        Default is None.
 
     Returns
     -------
@@ -59,7 +72,11 @@ def draw_mask_bboxes(
     bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
     bgr_color = (color[2], color[1], color[0])
 
-    bboxes = extract_bboxes(mask)
+    bboxes = extract_bboxes(
+        mask,
+        min_bbox_area=min_bbox_area,
+        max_shape_score=max_shape_score,
+    )
 
     for x, y, w, h in bboxes:
         cv2.rectangle(
@@ -75,6 +92,7 @@ def draw_mask_bboxes(
 
 def extract_bboxes(
     mask: np.ndarray,
+    min_bbox_area: int = 100,
     max_shape_score: float | None = None,
 ) -> list[tuple[int, int, int, int]]:
     """
@@ -86,6 +104,12 @@ def extract_bboxes(
         Binary mask image.
         Shape: (H, W)
         dtype: bool
+
+    min_bbox_area : int, optional
+        Minimum bounding box area in pixels.
+        Components whose ``width * height`` is below this value
+        are excluded as small noise.
+        Default is 100.
 
     max_shape_score : float or None, optional
         Maximum allowed bbox shape score.
@@ -127,8 +151,8 @@ def extract_bboxes(
         w = int(stats[label, cv2.CC_STAT_WIDTH])
         h = int(stats[label, cv2.CC_STAT_HEIGHT])
 
-        shape_area = w * h
-        if shape_area < 100:
+        bbox_area = w * h
+        if bbox_area < min_bbox_area:
             continue
 
         shape_score = calc_bbox_shape_score(
@@ -175,6 +199,11 @@ def calc_bbox_shape_score(
         - Values close to 0.0 for near-square shapes.
         - Values close to 1.0 for elongated shapes.
 
+    Raises
+    ------
+    ValueError
+        If ``width`` or ``height`` is not positive.
+
     Notes
     -----
     The score is defined as::
@@ -184,5 +213,8 @@ def calc_bbox_shape_score(
     This is intended to suppress linear artifacts
     such as forest roads or branch-shaped noise.
     """
+
+    if width <= 0 or height <= 0:
+        raise ValueError("width and height must be positive")
 
     return abs(width - height) / (width + height)
