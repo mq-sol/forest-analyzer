@@ -14,6 +14,7 @@ from services.forest_mask.classifier import classify_forest_status
 from services.forest_mask.overlay import create_mask_overlay
 from services.forest_mask.context import filter_components_by_surrounding_healthy
 from services.forest_mask.contour import draw_mask_contours
+from services.forest_mask.bbox import draw_mask_bboxes
 
 @click.command()
 @click.argument(
@@ -163,6 +164,13 @@ def main(
         anomaly_context,
     )
     save_rgb(contour_rgb, contour_rgb_path)
+
+    bbox_rgb_path = overlay_dir / f"bbox_{formatted_time}.jpg"
+    bbox_rgb = draw_mask_bboxes(
+        rgb,
+        anomaly_context,
+    )
+    save_rgb(bbox_rgb, bbox_rgb_path)
 
 
 if __name__ == "__main__":

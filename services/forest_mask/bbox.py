@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-
+from typing import Tuple
 
 def draw_mask_bboxes(
     rgb: np.ndarray,
@@ -47,20 +47,30 @@ def draw_mask_bboxes(
     This function is intended for visualization only.
     """
 
-    result = rgb.copy()
+    if rgb.ndim != 3:
+        raise ValueError("rgb must be 3-dimensional")
+
+    if mask.ndim != 2:
+        raise ValueError("mask must be 2-dimensional")
+
+    if rgb.shape[:2] != mask.shape:
+        raise ValueError("rgb and mask shape mismatch")
+
+    bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+    bgr_color = (color[2], color[1], color[0])
 
     bboxes = extract_bboxes(mask)
 
     for x, y, w, h in bboxes:
         cv2.rectangle(
-            result,
+            bgr,
             (x, y),
             (x + w, y + h),
-            color=color,
+            color=bgr_color,
             thickness=thickness,
         )
 
-    return result
+    return cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
 
 
 def extract_bboxes(
@@ -104,6 +114,17 @@ def extract_bboxes(
         y = int(stats[label, cv2.CC_STAT_TOP])
         w = int(stats[label, cv2.CC_STAT_WIDTH])
         h = int(stats[label, cv2.CC_STAT_HEIGHT])
+        shape_score, shape_area = calc_shape_score(h, w)
+        if shape_area < 100:
+            continue
+        if shape_score > 0.8:
+            continue
         bboxes.append((x, y, w, h))
 
     return bboxes
+
+
+def calc_shape_score(h: int, w: int) -> Tuple[float, float]:
+    shape_score = abs(w - h) / (w + h)
+    shape_area = w * h
+    return shape_score, shape_area
