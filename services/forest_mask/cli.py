@@ -13,7 +13,7 @@ from services.forest_mask.color import calc_hsv, calc_lab
 from services.forest_mask.classifier import classify_forest_status
 from services.forest_mask.overlay import create_mask_overlay
 from services.forest_mask.context import filter_components_by_surrounding_healthy
-
+from services.forest_mask.contour import draw_mask_contours
 
 @click.command()
 @click.argument(
@@ -148,7 +148,7 @@ def main(
 
     save_mask(anomaly_context, anomaly_context_path)
 
-    anomaly_overlay_path = overlay_dir / f"an_overlay{formatted_time}.jpg"
+    anomaly_overlay_path = overlay_dir / f"an_overlay_{formatted_time}.jpg"
     anomaly_overlay = create_mask_overlay(
         rgb,
         anomaly_context,
@@ -156,6 +156,13 @@ def main(
         alpha=0.4,
     )
     save_rgb(anomaly_overlay, anomaly_overlay_path)
+
+    contour_rgb_path = overlay_dir / f"conter_{formatted_time}.jpg"
+    contour_rgb = draw_mask_contours(
+        rgb,
+        anomaly_context,
+    )
+    save_rgb(contour_rgb, contour_rgb_path)
 
 
 if __name__ == "__main__":
