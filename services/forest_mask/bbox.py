@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from typing import Tuple
+
 
 def draw_mask_bboxes(
     rgb: np.ndarray,
@@ -75,6 +75,7 @@ def draw_mask_bboxes(
 
 def extract_bboxes(
     mask: np.ndarray,
+    max_shape_score: float | None = None,
 ) -> list[tuple[int, int, int, int]]:
     """
     Extract bounding boxes from connected components.
@@ -85,6 +86,15 @@ def extract_bboxes(
         Binary mask image.
         Shape: (H, W)
         dtype: bool
+
+    max_shape_score : float or None, optional
+        Maximum allowed bbox shape score.
+        Components whose shape score exceeds this value
+        are excluded as elongated artifacts
+        (e.g. forest roads, branch noise, linear artifacts).
+
+        If None, no shape score filtering is applied.
+        Default is None.
 
     Returns
     -------
@@ -98,6 +108,8 @@ def extract_bboxes(
     -----
     Connected components are extracted using
     OpenCV connected component labeling.
+
+    Shape score is computed by :func:`calc_bbox_shape_score`.
     """
 
     mask_uint8 = mask.astype(np.uint8)
@@ -114,17 +126,63 @@ def extract_bboxes(
         y = int(stats[label, cv2.CC_STAT_TOP])
         w = int(stats[label, cv2.CC_STAT_WIDTH])
         h = int(stats[label, cv2.CC_STAT_HEIGHT])
-        shape_score, shape_area = calc_shape_score(h, w)
+
+        shape_area = w * h
         if shape_area < 100:
             continue
-        if shape_score > 0.8:
+
+        shape_score = calc_bbox_shape_score(
+            width=w,
+            height=h,
+        )
+
+        if (
+            max_shape_score is not None
+            and shape_score > max_shape_score
+        ):
             continue
+
         bboxes.append((x, y, w, h))
 
     return bboxes
 
 
-def calc_shape_score(h: int, w: int) -> Tuple[float, float]:
-    shape_score = abs(w - h) / (w + h)
-    shape_area = w * h
-    return shape_score, shape_area
+def calc_bbox_shape_score(
+    width: int,
+    height: int,
+) -> float:
+    """
+    Calculate a shape score for a bounding box.
+
+    The score quantifies how elongated a bounding box is.
+
+    Parameters
+    ----------
+    width : int
+        Bounding box width in pixels.
+        Must be positive.
+
+    height : int
+        Bounding box height in pixels.
+        Must be positive.
+
+    Returns
+    -------
+    float
+        Shape score in the range [0.0, 1.0).
+
+        - 0.0 for a perfect square.
+        - Values close to 0.0 for near-square shapes.
+        - Values close to 1.0 for elongated shapes.
+
+    Notes
+    -----
+    The score is defined as::
+
+        shape_score = abs(width - height) / (width + height)
+
+    This is intended to suppress linear artifacts
+    such as forest roads or branch-shaped noise.
+    """
+
+    return abs(width - height) / (width + height)
