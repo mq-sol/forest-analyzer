@@ -15,6 +15,7 @@ from services.forest_mask.overlay import create_mask_overlay
 from services.forest_mask.context import filter_components_by_surrounding_healthy
 from services.forest_mask.contour import draw_mask_contours
 from services.forest_mask.bbox import draw_mask_bboxes
+from services.forest_mask.candidate import extract_candidates
 from services.forest_mask.preset import PRESETS, get_preset
 
 @click.command()
@@ -138,6 +139,9 @@ def main(
     )
 
     save_mask(anomaly_context, anomaly_context_path)
+
+    candidates = extract_candidates(anomaly_context)
+    click.echo(f"Candidates: {len(candidates)}")
 
     anomaly_overlay_path = overlay_dir / f"an_overlay_{formatted_time}.jpg"
     anomaly_overlay = create_mask_overlay(
